@@ -1,9 +1,3 @@
-# AI-Powered Code Review Rules for Playwright E2E Tests
-
-This repository contains a set of instructions designed to help GitHub Copilot provide consistent, reliable feedback during code reviews of Playwright-based E2E tests.
-
-The rules are intentionally short, strict, and highly structured - this ensures that the model interprets them correctly and produces fewer false positives or hallucinations.
-
 ## How to Work With These Instructions
 
 1. **Keep rules short and precise**  
@@ -25,8 +19,5 @@ The rules are intentionally short, strict, and highly structured - this ensures 
    This ruleset should contain only **custom Playwright and project-specific conventions**, not generic programming patterns.
 
 
-## Purpose
-
-The goal of this repository is to standardize E2E automation patterns, improve onboarding, reduce code review load, and ensure that both Copilot and human reviewers follow the same consistent rules.
 
 If you’d like to contribute improvements or propose additional rules, feel free to open an issue or pull request.
