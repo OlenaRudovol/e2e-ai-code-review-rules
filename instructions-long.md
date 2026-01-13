@@ -5,16 +5,15 @@ This checklist helps teams enforce consistent code quality standards in E2E test
 ## ✅ Required Patterns
 
 ### Test Structure
-
-- **Test Organization**: Every test file **must** use a `test.describe` block to group related tests.
+- **Test Organization**: Every test file **must** use a single top-level `test.describe` block to group related tests.
 
   ```typescript
   test.describe('Feature name tests', () => {
     // Tests go here
   });
   ```
-
-- **User Context**: Every `test.describe` block **must** include authentication context to specify test permissions.
+  
+- **User Context**: Each suite **must** define the authenticated user context (either at the `test.describe` level or globally for the test file).
 
   ```typescript
   test.describe('Feature tests', () => {
@@ -23,7 +22,7 @@ This checklist helps teams enforce consistent code quality standards in E2E test
   });
   ```
 
-- **Step Documentation**: All test actions **must** be wrapped in `test.step()` with descriptive labels. No more than 3 actions per step.
+- **Step Documentation**: All test actions **must** be wrapped in `test.step()` with descriptive labels. No more than 3 actions per step to keep steps readable and atomic.
 
   ```typescript
   await test.step(`Create a resource named "${resourceName}"`, async () => {
@@ -31,7 +30,7 @@ This checklist helps teams enforce consistent code quality standards in E2E test
   });
   ```
 
-- **Test Tags**: All test cases **must** use tags for filtering and categorization:
+- **Test Tags**: All test cases **must** use tags for filtering and categorization. Tags must be meaningful (feature, component, scope) and used consistently:
 
   ```typescript
   test(
@@ -45,7 +44,7 @@ This checklist helps teams enforce consistent code quality standards in E2E test
   );
   ```
 
-- **User Parameters**: Always use the authenticated user parameter for user context in tests.
+- **User Parameters**: Always use the authenticated user parameter rather than hardcoded user objects.
 
   ```typescript
   test('Test case', async ({ authenticatedUser, apiHelpers }) => {
@@ -55,7 +54,7 @@ This checklist helps teams enforce consistent code quality standards in E2E test
 
 ### Test Data Management
 
-- **Unique Test Data**: Test data names **must** include a unique identifier parameter for uniqueness.
+- **Unique Test Data**: Test data names **must** include a unique identifier to avoid collisions between parallel or repeated test runs.
 
   ```typescript
   const resourceName = `Test Resource ${uniqueId}`;
