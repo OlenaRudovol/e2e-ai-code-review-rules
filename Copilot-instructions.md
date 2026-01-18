@@ -5,32 +5,32 @@ This checklist helps teams enforce consistent code quality standards in E2E test
 ## ✅ Required Patterns
 
 ### Test Structure
-- **Test Organization**: Every test file **must** use a single top-level `test.describe` block to group related tests.
+- **Test Organization**: Every test file must use a single top-level `test.describe` block to group related tests.
 
   ```typescript
-  test.describe('Feature name tests', () => {
+  test.describe('Feature_name tests', () => {
     // Tests go here
   });
   ```
   
-- **User Context**: Each suite **must** define the authenticated user context (either at the `test.describe` level or globally for the test file).
+- **User Context**: Each suite must define the authenticated user context (either at the `test.describe` level or globally for the test file).
 
   ```typescript
-  test.describe('Feature tests', () => {
+  test.describe('Feature_name tests', () => {
     test.use({ authenticatedUser: users.admin });
     // Tests go here
   });
   ```
 
-- **Step Documentation**: All test actions **must** be wrapped in `test.step()` with descriptive labels. No more than 3 actions per step to keep steps readable and atomic.
+- **Step Documentation**: All test actions must be wrapped in `test.step()` with descriptive labels. No more than 3 actions per step, readable and atomic.
 
   ```typescript
-  await test.step(`Create a resource named "${resourceName}"`, async () => {
+  await test.step(`Create a resource named ${resourceName}`, async () => {
     // Test actions
   });
   ```
 
-- **Test Tags**: All test cases **must** use tags for filtering and categorization. Tags must be meaningful (feature, component, scope) and used consistently:
+- **Test Tags**: All test cases must use tags for filtering and categorization. Tags must be meaningful (feature, component, scope) and used consistently:
 
   ```typescript
   test(
@@ -54,7 +54,7 @@ This checklist helps teams enforce consistent code quality standards in E2E test
 
 ### Test Data Management
 
-- **Unique Test Data**: Test data names **must** include a unique identifier to avoid collisions between parallel or repeated test runs.
+- **Unique Test Data**: Test data names must include a unique identifier to avoid collisions between parallel or repeated test runs.
 
   ```typescript
   const resourceName = `Test Resource ${uniqueId}`;
@@ -69,19 +69,13 @@ This checklist helps teams enforce consistent code quality standards in E2E test
   }
   ```
 
-- **API Data Creation**: When creating data via API, register for cleanup:
+- **API Data Creation**: When creating data via API, register for global cleanup:
   ```typescript
   const resourceId = await apiClient.createResource(data);
   global.testDataRegistry.push(resourceId);
   ```
 
 ### Synchronization & Stability
-
-- **Search Index Sync**: After data creation (UI or API), **always** wait for search indexing.
-
-  ```typescript
-  await searchHelper.waitForIndexing([resourceName], PageId.MAIN_LISTING);
-  ```
 
 - **Network Operations**: Properly handle network calls and parallel operations for stability and performance.
 
@@ -99,7 +93,13 @@ This checklist helps teams enforce consistent code quality standards in E2E test
   ]);
   ```
 
-- **Background Job Verification**: When operations trigger background jobs, **always** wait for job completion.
+- **Search Index Sync**: After data creation (UI or API), always wait for search indexing.
+
+  ```typescript
+  await searchHelper.waitForIndexing([resourceName], PageId.MAIN_LISTING);
+  ```
+
+- **Background Job Verification**: When operations trigger background jobs, always wait for job completion.
 
   ```typescript
   await listingPage.performBulkAction();
@@ -137,7 +137,7 @@ This checklist helps teams enforce consistent code quality standards in E2E test
 
 ## 🧪 Test Verification Best Practices
 
-- **API-First Approach**: Use API for test setup/teardown when possible; reserve UI for testing actual user workflows.
+- **API-First Approach**: Use API for data creation in test setup/teasrdown
 
   ```typescript
   // ✅ Good: Create prerequisite data via API, test workflow via UI
