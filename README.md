@@ -5,9 +5,9 @@
    → It is better when a rule is “triggered unexpectedly” than when an important rule is “not triggered at all”.
 
 2. **Store additional context outside this ruleset**  
-   Explanations, screenshots, historical notes, and extended documentation should live in Jira or Confluence.  
-   → Add links to real Jira tickets or Confluence pages so reviewers can read the full context when needed.
+   Extended documentation, screenshots, tables and diagrams and other information should live in externally (Jira, Confluence or any website).  
+   → Add links to these resources so reviewers can follow them and read the full context.
 
 3. **Do not duplicate generic programming best practices**  
    Copilot already checks standard quality issues (unused variables, missing awaits, etc.).  
-   This ruleset should contain only **custom Playwright and project-specific conventions**, not generic programming patterns.
+   → The ruleset should contain only **custom project-specific conventions**, not generic programming patterns.
