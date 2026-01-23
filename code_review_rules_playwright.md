@@ -4,7 +4,24 @@ This checklist helps teams enforce consistent code quality standards in E2E test
 
 ## ✅ Required Patterns
 
+### Dependency Injection & Fixtures
+
+- **Use Fixtures**: Avoid manual instantiation of Page Objects or Helpers inside tests. Use Playwright fixtures to inject dependencies.
+
+// ✅ Good: Dependencies are injected
+test('Submit form', async ({ loginPage, dashboardPage }) => {
+  await loginPage.login();
+  await dashboardPage.checkStatus();
+});
+
+// ❌ Bad: Manual instantiation
+test('Submit form', async ({ page }) => {
+  const loginPage = new LoginPage(page); 
+  await loginPage.login();
+});
+
 ### Test Structure
+
 - **Test Organization**: Every test file must use a single top-level `test.describe` block to group related tests.
 
   ```typescript
@@ -160,7 +177,7 @@ This checklist helps teams enforce consistent code quality standards in E2E test
 
 ## 📝 Naming Conventions
 
-- **Test Names**: Start test names with ticket ID and use descriptive names.
+- **Test Names**: Start test names with a Ticket ID (if applicable) or a clear Feature prefix. 
 
   ```typescript
   // ✅ Good: test('TICKET-123 Verify resource creation with special characters', ...);
