@@ -57,6 +57,8 @@ This checklist helps teams enforce consistent code quality standards in E2E test
 - **Unique Test Data**: Test data names must include a unique identifier to avoid collisions between parallel or repeated test runs.
 
   ```typescript
+  const uniqueId = new Date().getMilliseconds().toString();
+  ...
   const resourceName = `Test Resource ${uniqueId}`;
   ```
 
