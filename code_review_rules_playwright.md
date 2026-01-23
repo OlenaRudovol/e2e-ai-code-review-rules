@@ -8,17 +8,19 @@ This checklist helps teams enforce consistent code quality standards in E2E test
 
 - **Use Fixtures**: Avoid manual instantiation of Page Objects or Helpers inside tests. Use Playwright fixtures to inject dependencies.
 
-// ✅ Good: Dependencies are injected
-test('Submit form', async ({ loginPage, dashboardPage }) => {
-  await loginPage.login();
-  await dashboardPage.checkStatus();
-});
-
-// ❌ Bad: Manual instantiation
-test('Submit form', async ({ page }) => {
-  const loginPage = new LoginPage(page); 
-  await loginPage.login();
-});
+  ```typescript
+  // ✅ Good: Dependencies are injected;
+  test('Submit form', async ({ loginPage, dashboardPage }) => {
+    await loginPage.login();
+    await dashboardPage.checkStatus();
+  });
+  
+  // ❌ Bad: Manual instantiation;
+  test('Submit form', async ({ page }) => {
+    const loginPage = new LoginPage(page); 
+    await loginPage.login();
+  });
+  ```
 
 ### Test Structure
 
