@@ -4,9 +4,12 @@ This checklist helps teams enforce consistent code quality standards in E2E test
 
 ## ✅ Required Patterns
 
+### Test isolation
+Tests must be fully independent and atomic. No test should depend on the state, data, or side effects created by another test.
+
 ### Dependency Injection & Fixtures
 
-- **Use Fixtures**: Avoid manual instantiation of Page Objects or Helpers inside tests. Use Playwright fixtures to inject dependencies.
+- **Use Fixtures**: Avoid manual instantiation of Page Objects or Helpers inside tests. Use Playwright fixtures to inject dependencies:
 
   ```typescript
   // ✅ Good: Dependencies are injected;
@@ -24,64 +27,60 @@ This checklist helps teams enforce consistent code quality standards in E2E test
 
 ### Test Structure
 
-- **Test Organization**: Every test file must use a single top-level `test.describe` block to group related tests.
+- **Test Organization**: Every test must use a top-level `test.describe` block to group related tests:
 
-  ```typescript
-  test.describe('Feature_name tests', () => {
-    // Tests go here
+  ```typescript 
+  test.describe('Feature: Resource Management', () => {
+    test('Create new resource', async ({ ... }) => {
+      // Test code
+    });
   });
   ```
   
-- **User Context**: Each suite must define the authenticated user context (either at the `test.describe` level or globally for the test file).
+- **User Context**: Each suite must define the authenticated user context:
 
-  ```typescript
-  test.describe('Feature_name tests', () => {
+  ```typescript  
+  test.describe('Feature: Resource Management', () => {
     test.use({ authenticatedUser: users.admin });
-    // Tests go here
+    // ...
   });
+  
   ```
 
-- **Step Documentation**: All test actions must be wrapped in `test.step()` with descriptive labels. No more than 3 actions per step, readable and atomic.
+- **Step Documentation**: Wrap actions in test.step(). Keep steps atomic (max 3-4 actions) and use descriptive, user-oriented labels:
 
   ```typescript
-  await test.step(`Create a resource named ${resourceName}`, async () => {
-    // Test actions
+  await test.step('Fill and submit the registration form for ${userData.name}', async () => {
+    await registrationPage.fillDetails(userData);
+    await registrationPage.submit();
   });
   ```
 
-- **Test Tags**: All test cases must use tags for filtering and categorization. Tags must be meaningful (feature, component, scope) and used consistently:
+- **Categorization**: Every test must have tags e.g. @Smoke, @Regression, @FeatureName. This allows for targeted execution in CI/CD. More details about tag policy is described in a the internal document (follow the inserted link):
 
   ```typescript
   test(
-    'TICKET-123 Feature functionality',
+    'Create new resource',
     {
       tag: ['@Feature', '@Component', '@Smoke'],
     },
-    async ({ page }) => {
+    async ({ ... }) => {
       // Test code
     }
   );
   ```
 
-- **User Parameters**: Always use the authenticated user parameter rather than hardcoded user objects.
-
-  ```typescript
-  test('Test case', async ({ authenticatedUser, apiHelpers }) => {
-    await apiHelpers.createResource(authenticatedUser, resourceData);
-  });
-  ```
-
 ### Test Data Management
 
-- **Unique Test Data**: Test data names must include a unique identifier to avoid collisions between parallel or repeated test runs.
+- **Unique Test Data**: Test data names must include a unique identifier to avoid collisions between parallel or repeated test runs:
 
-  ```typescript
+  ```typescriptz
   const uniqueId = new Date().getMilliseconds().toString();
   ...
   const resourceName = `Test Resource ${uniqueId}`;
   ```
 
-- **UI Data Creation**: Use cleanup decorator for UI-based data creation methods.
+- **UI Data Creation**: Use cleanup decorator for UI-based data creation methods:
 
   ```typescript
   @registerForCleanup()
@@ -98,29 +97,31 @@ This checklist helps teams enforce consistent code quality standards in E2E test
 
 ### Synchronization & Stability
 
-- **Network Operations**: Properly handle network calls and parallel operations for stability and performance.
+- **UI Operations**: Properly handle network calls and parallel operations when UI actions trigger network calls:
 
   ```typescript
-  // When UI actions trigger network calls
   await Promise.all([
     page.waitForResponse(resp => resp.url().includes('/api/save')),
     page.click('[data-testid="save-button"]'),
   ]);
+  ```
+  
+- **API Operations**: Execute independent API operations in parallel for better performance:
 
-  // Execute independent API operations in parallel for better performance
+  ```typescript
   await Promise.all([
     apiClient.createResource(data1),
     apiClient.createResource(data2),
   ]);
   ```
 
-- **Search Index Sync**: After data creation (UI or API), always wait for search indexing.
+- **Search Index Sync**: After data creation (UI or API), always wait for search indexing:
 
   ```typescript
-  await searchHelper.waitForIndexing([resourceName], PageId.MAIN_LISTING);
+  await searchHelper.waitForIndexing([resourceName]);
   ```
 
-- **Background Job Verification**: When operations trigger background jobs, always wait for job completion.
+- **Background Job Verification**: When operations trigger background jobs, always wait for job completion:
 
   ```typescript
   await listingPage.performBulkAction();
@@ -132,7 +133,7 @@ This checklist helps teams enforce consistent code quality standards in E2E test
 
 ## ❌ Prohibited Patterns
 
-- **Relative Imports**: Do not use imports with `../` - use path aliases instead.
+- **Relative Imports**: Do not use imports with `../` - use path aliases instead:
 
   ```typescript
   // ❌ Bad: import { Something } from '../../../utils/helpers';
@@ -140,7 +141,7 @@ This checklist helps teams enforce consistent code quality standards in E2E test
   ```
 
 - **Wait Anti-patterns**: Never use these unreliable waiting mechanisms:
-
+Explanation: you can add any built-in or custom methods that you want to prohibit or deprecate.
   - `waitForNetworkIdle`
   - `waitForFewSeconds`
   - `forceWait`
@@ -158,7 +159,7 @@ This checklist helps teams enforce consistent code quality standards in E2E test
 
 ## 🧪 Test Verification Best Practices
 
-- **API-First Approach**: Use API for data creation in test setup/teasrdown
+- **API-First Approach**: Use API for data creation in test setup/teardown:
 
   ```typescript
   // ✅ Good: Create prerequisite data via API, test workflow via UI
@@ -169,7 +170,7 @@ This checklist helps teams enforce consistent code quality standards in E2E test
   // Now test UI workflow with the created resource
   ```
 
-- **Notification Verification**: Do not rely on transient notification messages for test verification as they may be unreliable.
+- **Notification Verification**: Do not rely on transient notification messages for test verification as they may be unreliable:
 
   ```typescript
   // ✅ Good: Verify state changes via API or stable UI elements
@@ -179,7 +180,7 @@ This checklist helps teams enforce consistent code quality standards in E2E test
 
 ## 📝 Naming Conventions
 
-- **Test Names**: Start test names with a Ticket ID (if applicable) or a clear Feature prefix. 
+- **Test Names**: Start test names with a Ticket ID (if applicable) or a clear Feature prefix: 
 
   ```typescript
   // ✅ Good: test('TICKET-123 Verify resource creation with special characters', ...);
