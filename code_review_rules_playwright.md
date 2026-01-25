@@ -4,9 +4,6 @@ This checklist helps teams enforce consistent code quality standards in E2E test
 
 ## ✅ Required Patterns
 
-### Test isolation
-Tests must be fully independent and atomic. No test should depend on the state, data, or side effects created by another test.
-
 ### Dependency Injection & Fixtures
 
 - **Use Fixtures**: Avoid manual instantiation of Page Objects or Helpers inside tests. Use Playwright fixtures to inject dependencies:
@@ -56,7 +53,8 @@ Tests must be fully independent and atomic. No test should depend on the state, 
   });
   ```
 
-- **Categorization**: Every test must have tags e.g. @Smoke, @Regression, @FeatureName. This allows for targeted execution in CI/CD. More details about tag policy is described in a the internal document (follow the inserted link):
+- **Categorization**: Every test must have tags e.g. @Smoke, @Regression, @FeatureName. See our separate Tag Policy guide (you can insert a [link](https://playwright.dev/docs/best-practices) here).
+Explanation: This allows for targeted execution in CI/CD.
 
   ```typescript
   test(
@@ -70,12 +68,28 @@ Tests must be fully independent and atomic. No test should depend on the state, 
   );
   ```
 
+- **Test isolation**: Tests must be fully independent and atomic. No test should depend on the state, data, or side effects created by another test. Ensure data-level isolation - create/verify/clean your own data via fixtures or API:
+
+  ```typescript 
+  // ✅ Good: self-contained
+  test('Create & verify resource', async ({ apiHelpers, authenticatedUser }) => {
+    const id = await apiHelpers.createResource(authenticatedUser, { name });
+    // Test code
+    await apiHelpers.deleteResource(id); // or rely on global cleanup
+  });
+
+  // ❌ Bad: cross-test dependency
+  test('Edit resource from previous test', async () => {
+    await page.getByText('Resource left by previous test').click();
+  });
+  ```
+
 ### Test Data Management
 
 - **Unique Test Data**: Test data names must include a unique identifier to avoid collisions between parallel or repeated test runs:
 
   ```typescriptz
-  const uniqueId = new Date().getMilliseconds().toString();
+  const uniqueId = new Date().getMilliseconds();
   ...
   const resourceName = `Test Resource ${uniqueId}`;
   ```
@@ -140,12 +154,12 @@ Tests must be fully independent and atomic. No test should depend on the state, 
   // ✅ Good: import { Something } from '@utils/helpers';
   ```
 
-- **Wait Anti-patterns**: Never use these unreliable waiting mechanisms:
+- **Wait Anti-patterns**: Never use fixed timeouts or unreliable wait helpers:
 Explanation: you can add any built-in or custom methods that you want to prohibit or deprecate.
-  - `waitForNetworkIdle`
-  - `waitForFewSeconds`
-  - `forceWait`
-  - `waitForTimeout`
+  - .waitForLoadState('networkidle') (often unnecessary and flaky)
+  - .waitForSelector() without {state: 'visible'} or timeout override
+  - Custom .sleep(ms) helpers
+  - Any custom waiters (.waitForNetworkIdle, .waitForFewSeconds, .forceWait, .waitForTimeout, etc.)
 
 - **Page Object Methods**: Always use page object methods instead of direct locators in tests:
 
@@ -180,7 +194,8 @@ Explanation: you can add any built-in or custom methods that you want to prohibi
 
 ## 📝 Naming Conventions
 
-- **Test Names**: Start test names with a Ticket ID (if applicable) or a clear Feature prefix: 
+- **Test Names**: Start test names with a Ticket ID (if applicable) or a clear Feature prefix:
+Explanation: For public/open-source projects, prefer descriptive 'should …' style + tags for traceability.
 
   ```typescript
   // ✅ Good: test('TICKET-123 Verify resource creation with special characters', ...);
@@ -214,5 +229,10 @@ Explanation: you can add any built-in or custom methods that you want to prohibi
 
 ## 🔗 Resources
 
-- [Playwright Best Practices](https://playwright.dev/docs/best-practices)
-- [Playwright Documentation](https://playwright.dev/)
+- !Any internal documentation can be added here
+- [Playwright Best Practices](https://playwright.dev/docs/best-practices) — official guide
+- [Playwright Test Documentation](https://playwright.dev/docs/intro)
+- [Authentication & Storage State Reuse](https://playwright.dev/docs/auth)
+- [Fixtures & Dependency Injection](https://playwright.dev/docs/test-fixtures)
+- [Browser Contexts & Isolation](https://playwright.dev/docs/browser-contexts)
+- Community: BrowserStack "15 Best Practices for Playwright in 2026", DeviQA Playwright Guide (2025)
