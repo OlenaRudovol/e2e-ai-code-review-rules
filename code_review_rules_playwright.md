@@ -10,15 +10,11 @@ This checklist helps teams enforce consistent code quality standards in E2E test
 
   ```typescript
   // ✅ Good: Dependencies are injected;
-  test('Submit form', async ({ loginPage, dashboardPage }) => {
-    await loginPage.login();
-    await dashboardPage.checkStatus();
-  });
+  test('Submit form', async ({ loginPage, dashboardPage }) => {...});
   
   // ❌ Bad: Manual instantiation;
   test('Submit form', async ({ page }) => {
     const loginPage = new LoginPage(page); 
-    await loginPage.login();
   });
   ```
 
@@ -183,6 +179,8 @@ Explanation: you can add any built-in or custom methods that you want to prohibi
   );
   // Now test UI workflow with the created resource
   ```
+
+- **Soft Assertions**: Use expect.soft(…) when verifying ≥3 related conditions in one step. Fail the test only after collecting all issues.
 
 - **Notification Verification**: Do not rely on transient notification messages for test verification as they may be unreliable:
 
