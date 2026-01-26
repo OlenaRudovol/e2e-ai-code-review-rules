@@ -1,12 +1,16 @@
 # Playwright E2E Testing Guidelines
 
-This checklist helps teams enforce consistent code quality standards in E2E tests using Playwright.
+## Design Principles
+
+These rules are intentionally strict to enable reliable AI-assisted code review. They favor deterministic signals, explicit synchronization, and clear intent over convenience or visual feedback.
+If a pattern is ambiguous for AI to reason about, it is considered invalid.
 
 ## ✅ Required Patterns
 
 ### Dependency Injection & Fixtures
 
-- **Use Fixtures**: Avoid manual instantiation of Page Objects or Helpers inside tests. Use Playwright fixtures to inject dependencies:
+- **Use Fixtures**: Never instantiate page objects or helpers manually in tests.
+Inject everything via Playwright fixtures:
 
   ```typescript
   // ✅ Good: Dependencies are injected;
@@ -30,7 +34,7 @@ This checklist helps teams enforce consistent code quality standards in E2E test
   });
   ```
   
-- **User Context**: Each suite must define the authenticated user context:
+- **User Context**: Every test.describe block that needs authentication must set the authenticated user context:
 
   ```typescript  
   test.describe('Feature: Resource Management', () => {
@@ -40,31 +44,23 @@ This checklist helps teams enforce consistent code quality standards in E2E test
   
   ```
 
-- **Step Documentation**: Wrap actions in test.step(). Keep steps atomic (max 3-4 actions) and use descriptive, user-oriented labels:
+- **Step Documentation**: Every UI/API action sequence must be wrapped in test.step(). Maximum 4 actions per step. Label must describe user intent:
 
   ```typescript
-  await test.step('Fill and submit the registration form for ${userData.name}', async () => {
+  await test.step('Fill and submit the registration form', async () => {
     await registrationPage.fillDetails(userData);
     await registrationPage.submit();
   });
   ```
 
-- **Categorization**: Every test must have tags e.g. @Smoke, @Regression, @FeatureName. See our separate Tag Policy guide (you can insert a [link](https://playwright.dev/docs/best-practices) here).
-Explanation: This allows for targeted execution in CI/CD.
+- **Categorization**: Every test must have tag e.g. @Smoke, @FeatureX. See our separate [Tag Policy](https://playwright.dev/docs/best-practices) guide.
+Why: This allows for targeted execution in CI/CD.
 
   ```typescript
-  test(
-    'Create new resource',
-    {
-      tag: ['@Feature', '@Component', '@Smoke'],
-    },
-    async ({ ... }) => {
-      // Test code
-    }
-  );
+  test('…', { tag: ['@Smoke', '@FeatureX'] }, async () => { … });
   ```
 
-- **Test isolation**: Tests must be fully independent and atomic. No test should depend on the state, data, or side effects created by another test. Ensure data-level isolation - create/verify/clean your own data via fixtures or API:
+- **Test isolation**: Tests must be completely independent and atomic. No test should depend on the state, data, or side effects created by another test. Ensure data-level isolation - create/verify/clean your own data via fixtures or API:
 
   ```typescript 
   // ✅ Good: self-contained
@@ -82,15 +78,14 @@ Explanation: This allows for targeted execution in CI/CD.
 
 ### Test Data Management
 
-- **Unique Test Data**: Test data names must include a unique identifier to avoid collisions between parallel or repeated test runs:
+- **Unique Test Data**: Every created entity name/title must contain a unique suffix (${Date.now()} or uuid) identifier.
+Why: To avoid collisions between parallel or repeated test runs.
 
-  ```typescriptz
-  const uniqueId = new Date().getMilliseconds();
-  ...
-  const resourceName = `Test Resource ${uniqueId}`;
+  ```typescript
+  const resourceName = `Test Resource ${Date.now()}`;
   ```
 
-- **UI Data Creation**: Use cleanup decorator for UI-based data creation methods:
+- **UI Data Creation**: UI creation methods must use @registerForCleanup() decorator:
 
   ```typescript
   @registerForCleanup()
@@ -99,7 +94,7 @@ Explanation: This allows for targeted execution in CI/CD.
   }
   ```
 
-- **API Data Creation**: When creating data via API, register for global cleanup:
+- **API Data Creation**: API creation must push ID to global.testDataRegistry (global cleanup):
   ```typescript
   const resourceId = await apiClient.createResource(data);
   global.testDataRegistry.push(resourceId);
@@ -107,12 +102,13 @@ Explanation: This allows for targeted execution in CI/CD.
 
 ### Synchronization & Stability
 
-- **UI Operations**: Properly handle network calls and parallel operations when UI actions trigger network calls:
+- **UI Operations**: UI actions that trigger requests must use Promise.all([waitForResponse, action]).
+Why: Properly handle network calls and parallel operations.
 
   ```typescript
   await Promise.all([
     page.waitForResponse(resp => resp.url().includes('/api/save')),
-    page.click('[data-testid="save-button"]'),
+    formPage.clickSaveButton(),
   ]);
   ```
   
@@ -131,7 +127,8 @@ Explanation: This allows for targeted execution in CI/CD.
   await searchHelper.waitForIndexing([resourceName]);
   ```
 
-- **Background Job Verification**: When operations trigger background jobs, always wait for job completion:
+- **Background Job Verification**: When operations trigger background jobs, always wait for job completion.
+  Why: Required for eventual consistency in async flows.
 
   ```typescript
   await listingPage.performBulkAction();
@@ -143,46 +140,58 @@ Explanation: This allows for targeted execution in CI/CD.
 
 ## ❌ Prohibited Patterns
 
-- **Relative Imports**: Do not use imports with `../` - use path aliases instead:
+- **Relative Imports**: Do not use relative imports (../). Use path aliases only (@utils/…).
 
   ```typescript
   // ❌ Bad: import { Something } from '../../../utils/helpers';
   // ✅ Good: import { Something } from '@utils/helpers';
   ```
 
-- **Wait Anti-patterns**: Never use fixed timeouts or unreliable wait helpers:
-Explanation: you can add any built-in or custom methods that you want to prohibit or deprecate.
-  - .waitForLoadState('networkidle') (often unnecessary and flaky)
-  - .waitForSelector() without {state: 'visible'} or timeout override
-  - Custom .sleep(ms) helpers
-  - Any custom waiters (.waitForNetworkIdle, .waitForFewSeconds, .forceWait, .waitForTimeout, etc.)
-
-- **Page Object Methods**: Always use page object methods instead of direct locators in tests:
+- **Wait Anti-patterns**: Never use fixed timeouts or unreliable wait helpers.
 
   ```typescript
-  // ❌ Bad: Direct locators in tests
-  await page.locator('[data-testid="save-button"]').click();
+    ❌ .waitForTimeout() // use locators/assertions instead
+    ❌ .waitForLoadState('networkidle') // too unstable for modern SPAs
+    ❌ .waitForSelector(selector) without {state: 'visible'} // use expect(locator).toBeVisible() instead
+    ❌ forceWait() or sleep() // The ultimate "flaky test" culprits
+  ```
 
-  // ✅ Good: Use page object methods
-  await pageObject.clickSaveButton();
+- **Page Object & Locator Discipline**: All locators must be stored as private class properties in page objects.
+Never use locators:
+  -  directly in test files
+  -  inline inside page object methods
+ 
+  ```typescript 
+  // ❌ Bad: direct in test
+  await page.locator('[data-testid="save"]').click();
+  // ❌ Bad: inline (even good locator type)
+  async clickSave() {
+    await this.page.getByRole('button', { name: 'Save' }).click();  // duplicated, hard to change centrally
+  }
+
+  // ✅ Good
+  class LoginPage {
+    private readonly saveButton = this.page.getByRole('button', { name: 'Save' });
+    async clickSave() {
+      await this.saveButton.click();
+    }
+  }
   ```
 
 ## 🧪 Test Verification Best Practices
 
-- **API-First Approach**: Use API for data creation in test setup/teardown:
+- **API-First Approach**: Create all prerequisite data via API, never via UI unless testing UI creation itself.
 
   ```typescript
   // ✅ Good: Create prerequisite data via API, test workflow via UI
-  const resourceId = await apiHelpers.createResource(
-    authenticatedUser,
-    testData
-  );
+  const resourceId = await apiHelpers.createResource(authenticatedUser, testData);
   // Now test UI workflow with the created resource
   ```
 
 - **Soft Assertions**: Use expect.soft(…) when verifying ≥3 related conditions in one step. Fail the test only after collecting all issues.
 
-- **Notification Verification**: Do not rely on transient notification messages for test verification as they may be unreliable:
+- **Notification Verification**: Never verify business logic outcome via transient UI notifications/toasts. Use API calls or stable DOM elements.
+Why: transient notification messages may be unreliable.
 
   ```typescript
   // ✅ Good: Verify state changes via API or stable UI elements
@@ -192,8 +201,7 @@ Explanation: you can add any built-in or custom methods that you want to prohibi
 
 ## 📝 Naming Conventions
 
-- **Test Names**: Start test names with a Ticket ID (if applicable) or a clear Feature prefix:
-Explanation: For public/open-source projects, prefer descriptive 'should …' style + tags for traceability.
+- **Test Names**: Start test names with a Ticket ID (if applicable) or a clear feature prefix:
 
   ```typescript
   // ✅ Good: test('TICKET-123 Verify resource creation with special characters', ...);
@@ -201,17 +209,6 @@ Explanation: For public/open-source projects, prefer descriptive 'should …' st
   ```
 
 ## 🎨 Code Quality
-
-- **Selector Organization**: Store all selectors as class properties in page objects, never inline in methods.
-
-  ```typescript
-  // ✅ Good:
-  private readonly saveButton = '[data-testid="save-button"]';
-  async clickSave() { await this.page.click(this.saveButton); }
-
-  // ❌ Bad:
-  async clickSave() { await this.page.click('[data-testid="save-button"]'); }
-  ```
 
 - **Always Await**: Never forget `await` for async operations - missing await causes race conditions and flaky tests.
 
@@ -227,7 +224,7 @@ Explanation: For public/open-source projects, prefer descriptive 'should …' st
 
 ## 🔗 Resources
 
-- !Any internal documentation can be added here
+// Any internal documentation can be added here
 - [Playwright Best Practices](https://playwright.dev/docs/best-practices) — official guide
 - [Playwright Test Documentation](https://playwright.dev/docs/intro)
 - [Authentication & Storage State Reuse](https://playwright.dev/docs/auth)
