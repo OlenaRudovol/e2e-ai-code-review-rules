@@ -31,11 +31,6 @@ These rules are intentionally strict to give AI tools clear, deterministic signa
 
 # Playwright E2E Testing Guidelines
 
-## Design Principles
-
-These rules are intentionally strict to enable reliable AI-assisted code review. They favor deterministic signals, explicit synchronization, and clear intent over convenience or visual feedback.
-If a pattern is ambiguous for AI to reason about, it is considered invalid.
-
 ## ✅ Required Patterns
 
 ### Dependency Injection & Fixtures
